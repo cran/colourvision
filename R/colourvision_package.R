@@ -211,6 +211,14 @@ GENmodel<-function(photo=ncol(C)-1, type="length", length=NA, edge=NA, R, I, Rb=
   ifelse(any(maxR <= 1) && max(Rb[, 2]) > 1 || any(maxR > 1) && max(Rb[, 2]) <= 1,
          yes = warning("There seems to be a problem with input files. 'R' and 'Rb' must be in the same scale. Both must be either in percentage (0-100%) or proportion (0-1).", 
                        call. = FALSE), no = "")
+  if (noise.given==FALSE) {
+    message("Relative number of each photoreceptor (n) normalised by the most common one. This may generate different results compared to colourvision < v2.1.0")
+  }
+  if (noise.given==FALSE&length(v)!=length(n)) {
+    #user provides only one v value.
+    message("The model assumes that noise (v) refers to the most common receptor.")
+  }
+  
 
   internal<-function(photo, type, length, edge,
                      R, I, Rb, C, vonKries, func, unity,
@@ -435,6 +443,7 @@ EMmodel <- function (photo=ncol(C)-1,
 noise_e<-function (noise, e, v, n) 
 {
   dependent<-FALSE
+  
   quantum<-NULL
   if (noise == TRUE) {
     if(dependent==FALSE) {
@@ -445,15 +454,40 @@ noise_e<-function (noise, e, v, n)
     }
   }
   if (noise == FALSE) {
-    if(dependent==FALSE) {
-      r <- v/sqrt(n)
+    
+    if (length(v)!=length(n)) {
+      #user provides only one v value.
+      #message("The model assumes that noise refers to the most common receptor.")
+      
+      n.temp<-n/max(n)
+
+      if(dependent==FALSE) {
+        r <- v/sqrt(n.temp)
+      }
+      
+      if(dependent==TRUE) {
+        r <- sqrt( ((v^2)/n.temp)+(1/quantum) )
+      }
     }
-    if(dependent==TRUE) {
-      r <- sqrt( ((v^2)/n)+(1/quantum) )
+    
+    if (length(v)==length(n)) {
+      #users provide same number of v values as n values
+      
+      v.pos<-which(!is.na(v)==TRUE)
+      n.temp<-n/(n[[v.pos]])
+
+      if(dependent==FALSE) {
+        r <- v[[v.pos]]/sqrt(n.temp)
+      }
+      if(dependent==TRUE) {
+        r <- sqrt( ((v[[v.pos]]^2)/n.temp)+(1/quantum) )
+      }
     }
+    
   }
   return(r)
 }
+
 
 RNLmodel <- function (model = c("linear", "log"), photo=ncol(C)-1,
                       R1, R2=Rb, Rb, I, C, noise = FALSE, v=NA, n=NA, e=NA,
@@ -467,6 +501,25 @@ RNLmodel <- function (model = c("linear", "log"), photo=ncol(C)-1,
   if (photo=="tri") {photo1<-3}
   if (photo=="tetra") {photo1<-4}
   if (photo=="penta") {photo1<-5}
+  
+  #RUN ACHROMATIC CONTRAST WHEN
+  if (photo1 == 1) {
+    if (noise == FALSE) {
+      warning("For achromatic contrast calculations (single photoreceptor), use 'noise = TRUE'")
+    }
+    if (model == "linear" ) {
+      warning("For achromatic contrast calculations (single photoreceptor), use 'model = 'log''")
+    }
+    if (noise == TRUE&model == "log") {
+      message("Estimating the Weber achromatic contrast for a single photoreceptor using the RNLachrom function.")
+    
+      r<-RNLachrom(R1 = R1, R2=R2, Rb=Rb, I=I, C=C,
+                   e=e,
+                   interpolate = interpolate, nm = nm)
+      return(r)
+    }
+  } else {
+    
   
   #warnings
   ifelse(photo1 != nphoto, yes = warning("Argument 'C' has a number of sensitivity curves different than argument 'photo'.", 
@@ -494,6 +547,16 @@ RNLmodel <- function (model = c("linear", "log"), photo=ncol(C)-1,
     warning("Alternative methods are not available for animals with more than 4 photoreceptor types. `colourvision` will be used instead.", call. = FALSE)
     coord<-"colourvision"
   }
+  if (noise==FALSE) {
+    message("Relative number of each photoreceptor (n) normalised by the most common one. This may generate different results compared to colourvision < v2.1.0")
+  }
+  
+  if (noise==FALSE&length(v)!=length(n)) {
+    #user provides only one v value.
+    message("The model assumes that noise (v) refers to the most common receptor.")
+  }
+  
+  
   #internal function to be used with 'apply'
   internal <- function(model, photo, R1, R2=Rb, Rb, I, C, noise, 
                        v, n, e, interpolate, nm) {
@@ -517,9 +580,7 @@ RNLmodel <- function (model = c("linear", "log"), photo=ncol(C)-1,
     #noise
     noise_values<-vector(length=photo1)
     if (dependent == FALSE) {
-      for (i in 1:photo1) {
-        noise_values[[i]]<-noise_e(noise = noise, e = e[[i]], v = v, n = n[[i]])
-      }
+        noise_values<-noise_e(noise = noise, e = e, v = v, n = n)
     }
     
     if (coord=="colourvision") {
@@ -642,6 +703,7 @@ RNLmodel <- function (model = c("linear", "log"), photo=ncol(C)-1,
   attr(r, "coord") <- coord
   
   return(r)
+  }
 }
 
 
@@ -1009,7 +1071,7 @@ EMtetrahedron <- function (x, y, z, s.col = "red", f.col = "black", vnames = c("
   
   if (requireNamespace("rgl", quietly = TRUE)) {
   
-  rgl::rgl.viewpoint(zoom = 0.75)
+  rgl::view3d(zoom = 0.75)
   rgl::plot3d(x = x, y = y, z = z, col = s.col, type = type, 
               add = add, xlab = xlab, ylab = ylab, zlab = zlab, box = box, axes = axes, 
               radius = radius, ylim = ylim, xlim = xlim,
@@ -1100,6 +1162,14 @@ RNLthres <-function (photo=ncol(C)-1,
                                          call. = FALSE), no = "")
   ifelse(any(ncol(Rb) > 2), yes = warning("'Rb' argument with more than two columns. Only the first two will be used.", 
                                           call. = FALSE), no = "")
+  if (noise==FALSE) {
+    message("Relative number of each photoreceptor (n) normalised by the most common one. This may generate different results compared to colourvision < v2.1.0")
+  }
+  
+  if (noise==FALSE&length(v)!=length(n)) {
+    #user provides only one v value.
+    message("The model assumes that noise (v) refers to the most common receptor.")
+  }
 
   #Rb photon catch
   SRb<-vector(length=photo1)
@@ -1112,9 +1182,7 @@ RNLthres <-function (photo=ncol(C)-1,
   #noise
   noise_values<-vector(length=photo1)
   if (dependent == FALSE) {
-    for (i in 1:photo1) {
-      noise_values[[i]]<-noise_e(noise = noise, e = e[[i]], v = v, n = n[[i]])
-    }
+      noise_values<-noise_e(noise = noise, e = e, v = v, n = n)
   }
   
 

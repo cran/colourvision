@@ -142,13 +142,13 @@ for(i in 2:ncol(R)) {
 ## -----------------------------------------------------------------------------
 CTTKmodel3<-CTTKmodel(R=R, I=D65, C=bee, Rb=Rb)
 
-## ---- echo=FALSE, results='asis'----------------------------------------------
+## ----echo=FALSE, results='asis'-----------------------------------------------
 knitr::kable(head(CTTKmodel3), caption = "Table 1. `CTTKmodel()` output of a trichromatic animal, showing the relative quantum catches (Qr), photoreceptor outputs (E), colour locus coordinates (X), and the chromaticity distance of stimulus in relation to the background (deltaS)")
 
 ## -----------------------------------------------------------------------------
 EMmodel3<-EMmodel(type="length",R=R,I=D65,Rb=Rb,C=bee)
 
-## ---- echo=FALSE, results='asis'----------------------------------------------
+## ----echo=FALSE, results='asis'-----------------------------------------------
 knitr::kable(head(EMmodel3), caption = "Table 2. `EMmodel()` output of a trichromatic animal, showing the relative quantum catches (Qr), photoreceptor outputs (E), colour locus coordinates (X), and the chromaticity distance of stimulus in relation to the background (deltaS)")
 
 ## -----------------------------------------------------------------------------
@@ -160,14 +160,22 @@ RNLmodel3<-RNLmodel(model="log",photo=3,R1=R,Rb=Rb,I=D65,C=bee,
 ## -----------------------------------------------------------------------------
 
 RNLmodel3.1<-RNLmodel(model="log", photo=3, R1=R, Rb=Rb, I=D65, C=bee,
-                    noise=FALSE, n=c(1,2,1), v=0.1)
+                    noise=FALSE, n=c(0.5,1,0.5), v=0.1)
 
 ## -----------------------------------------------------------------------------
 R2<-logistic(x = seq(300, 700, 1), x0=512, L = 70, k=0.01)
 RNLmodel3.2<-RNLmodel(model="log", photo=3, R1=R, R2=R2, Rb=Rb, I=D65, C=bee, noise=FALSE, n=c(1,2,1), v=0.1)
 
-## ---- echo=TRUE---------------------------------------------------------------
+## ----echo=TRUE----------------------------------------------------------------
 head(RNLmodel3.2)
+
+## -----------------------------------------------------------------------------
+
+RNLmodel.achrom<-RNLachrom(R1=R,Rb=Rb,I=D65,C=bee[,c(1,4)],e=0.16)
+
+
+## ----echo=TRUE----------------------------------------------------------------
+head(RNLmodel.achrom)
 
 ## -----------------------------------------------------------------------------
 C<-bee
@@ -274,9 +282,9 @@ library(rgl)
 plot3d.colourvision(CTTKmodel4, s.col = colours, size=4)
 
 ## ----echo=FALSE---------------------------------------------------------------
-rgl.viewpoint(theta = 30, phi = 10, zoom=0.8)
+view3d(theta = 30, phi = 10, zoom=0.8)
 rgl.snapshot("CTTKmodel4.png")
-rgl.close()
+close3d()
 
 ## ----echo=FALSE, dev="png", out.width='400px', fig.align="center", fig.cap = "Figure 14. @Chittka:1992p186 hexagonal trapezohedron representing the colour space boundaries of a tetrachromatic animal. Circles denotes colour locus of simulated reflectance spectra (Figure 7)."----
 knitr::include_graphics('./CTTKmodel4.png', auto_pdf = FALSE)
@@ -293,9 +301,9 @@ plot3d.colourvision(EMmodel4, s.col = colours, size=4)
 
 ## ----echo=FALSE---------------------------------------------------------------
 library(rgl)
-rgl.viewpoint(theta = 0, phi = 30, zoom=0.8)
+view3d(theta = 0, phi = 30, zoom=0.8)
 rgl.snapshot("EMmodel4.png")
-rgl.close()
+close3d()
 
 ## ----echo=FALSE, dev="png", out.width='400px', fig.align="center", fig.cap = "Figure 15. @ENDLER:2005p538 tetrahedron representing the colour space boundaries of a tetrachromatic animal. Circles denotes colour locus of simulated reflectance spectra (Figure 7)."----
 knitr::include_graphics('./EMmodel4.png', auto_pdf = FALSE)
@@ -311,9 +319,9 @@ par3d(windowRect=c(100,100,800,800))
 plot3d.colourvision(RNLmodel4, xlab="", ylab="", zlab="", col = colours, size=4)
 
 ## ----echo=FALSE---------------------------------------------------------------
-rgl.viewpoint(theta = 30, phi = 10, zoom=1)
+view3d(theta = 30, phi = 10, zoom=1)
 rgl.snapshot("RNLmodel4.png")
-rgl.close()
+close3d()
 
 ## ----echo=FALSE, dev="png", out.width='400px', fig.align="center", fig.cap = "Figure 16. Receptor Noise Limited Model colour space of a tetrachromatic animal. Circles denote colour locus of simulated reflectance spectra (Figure 7). Vectors represent photoreceptor outputs."----
 knitr::include_graphics('./RNLmodel4.png', auto_pdf = FALSE)
